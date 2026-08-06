@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 from data_source import fetch_history
 from engine import score_latest
-from db import init_db, save_signals, open_trade, get_trades, close_trade
+from db import init_db, save_signals, open_trade, get_trades, close_trade, get_signals
 
 BASE = Path(__file__).parent
 
@@ -31,7 +31,45 @@ def _update_open_trades():
         except Exception:
             pass
     return closed
+def _open_previous_buy_signals():
+    previous = get_signals(limit=1000, latest_only=False)
 
+    if previous.empty:
+        return 0
+
+    dates = sorted(previous["signal_date"].dropna().unique(), reverse=True)
+
+    if len(dates) < 2:
+        return 0
+
+    previous_date = dates[1]
+
+    candidates = previous[
+        (previous["signal_date"] == previous_date) &
+        (previous["signal"] == "BUY")
+    ].sort_values("score", ascending=False)
+
+    opened = 0
+
+    for _, r in candidates.head(5).iterrows():
+        try:
+            hist = fetch_history(r["symbol"], "1mo")
+
+            if hist.empty:
+                continue
+
+            latest_date = pd.Timestamp(hist.index[-1]).date().isoformat()
+
+            # Open only when a newer trading session exists
+            if latest_date > previous_date:
+                trade = r.to_dict()
+                trade["price"] = float(hist.iloc[-1]["Open"])
+                opened += int(open_trade(trade))
+
+        except Exception as e:
+            print(f"Entry error {r['symbol']}: {e}")
+
+    return opened
 def run_daily_scan(auto_open=True):
     init_db()
     _update_open_trades()
@@ -48,10 +86,8 @@ def run_daily_scan(auto_open=True):
     save_signals(rows)
     buy_rows = [r for r in rows if r["signal"]=="BUY"]
     opened = 0
-    if auto_open:
-        # V1 paper-test rule: maximum 5 new BUY entries per scan, highest scores first.
-        for r in sorted(buy_rows, key=lambda x:x["score"], reverse=True)[:5]:
-            opened += int(open_trade(r))
+if auto_open:
+    opened = _open_previous_buy_signals()
     return {"scanned":len(rows),"buy_count":len(buy_rows),"opened":opened}
 
 if __name__ == "__main__":
