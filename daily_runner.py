@@ -75,6 +75,7 @@ def run_daily_scan(auto_open=True):
     _update_open_trades()
     universe = pd.read_csv(BASE / "tickers.csv")
     rows = []
+
     for _, x in universe.iterrows():
         try:
             scored = score_latest(fetch_history(x.symbol, "2y"))
@@ -83,12 +84,21 @@ def run_daily_scan(auto_open=True):
                 rows.append(scored)
         except Exception as e:
             print(f"{x.symbol}: {e}")
+
     save_signals(rows)
-    buy_rows = [r for r in rows if r["signal"]=="BUY"]
+
+    buy_rows = [r for r in rows if r["signal"] == "BUY"]
+
     opened = 0
-if auto_open:
-    opened = _open_previous_buy_signals()
-    return {"scanned":len(rows),"buy_count":len(buy_rows),"opened":opened}
+    if auto_open:
+        opened = _open_previous_buy_signals()
+
+    return {
+        "scanned": len(rows),
+        "buy_count": len(buy_rows),
+        "opened": opened
+    }
+
 
 if __name__ == "__main__":
     print(run_daily_scan(auto_open=True))
