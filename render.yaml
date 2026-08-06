@@ -1,0 +1,27 @@
+
+services:
+  - type: web
+    name: tadawul-mobile-v1
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tadawul-v1-db
+          property: connectionString
+
+  - type: cron
+    name: tadawul-daily-scan
+    runtime: python
+    schedule: "30 13 * * 0-4"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python daily_runner.py
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tadawul-v1-db
+          property: connectionString
+
+databases:
+  - name: tadawul-v1-db
