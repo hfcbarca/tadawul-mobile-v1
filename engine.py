@@ -39,6 +39,7 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df["ATR14"] = tr.rolling(14).mean()
 
     df["VOL20"] = vol.rolling(20).mean()
+    df["AVG_VALUE20"] = df["VOL20"] * close
     df["RVOL"] = vol / df["VOL20"].replace(0, np.nan)
     df["HIGH20_PREV"] = high.shift(1).rolling(20).max()
     df["LOW20_PREV"] = low.shift(1).rolling(20).min()
@@ -118,7 +119,7 @@ def score_latest(df: pd.DataFrame) -> dict | None:
     target1 = close + 2.0 * risk
     target2 = close + 3.0 * risk
 
-    if score >= 80:
+    if score >= 80 and r.AVG_VALUE20 >= 5_000_000:
         signal = "BUY"
     elif score >= 65:
         signal = "WATCH"
