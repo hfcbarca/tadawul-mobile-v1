@@ -1,0 +1,28 @@
+name: Tadawul Daily Scan
+
+on:
+  schedule:
+    # Sunday–Thursday at 13:10 UTC = 4:10 PM Saudi time
+    - cron: '10 13 * * 0-4'
+  workflow_dispatch:
+
+jobs:
+  daily-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Tadawul daily scan
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python daily_runner.py
