@@ -185,7 +185,7 @@ def get_test_progress():
 
     return {
         "start_date": TEST_START_DATE,
-        "end_date": end_date.
+        "end_date": end_date,
         "elapsed": elapsed,
         "remaining": remaining,
     }
