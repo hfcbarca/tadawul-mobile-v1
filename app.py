@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date, datetime
+
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -27,6 +29,9 @@ st.set_page_config(
 
 init_db()
 BASE = Path(__file__).parent
+
+TEST_START_DATE = date(2026, 8, 8)
+TEST_LENGTH_DAYS = 30
 
 
 st.markdown(
@@ -158,6 +163,34 @@ def calculate_performance_from_trades(trade_df):
     }
 
 
+def get_test_progress():
+    today = datetime.now().date()
+
+    elapsed = (today - TEST_START_DATE).days + 1
+
+    if elapsed < 0:
+        elapsed = 0
+
+    if elapsed > TEST_LENGTH_DAYS:
+        elapsed = TEST_LENGTH_DAYS
+
+    remaining = max(
+        TEST_LENGTH_DAYS - elapsed,
+        0,
+    )
+
+    end_date = TEST_START_DATE + pd.Timedelta(
+        days=TEST_LENGTH_DAYS - 1
+    )
+
+    return {
+        "start_date": TEST_START_DATE,
+        "end_date": end_date.date(),
+        "elapsed": elapsed,
+        "remaining": remaining,
+    }
+
+
 st.title("📈 Tadawul V1")
 
 st.caption(
@@ -202,6 +235,8 @@ signals = get_signals(latest_only=True)
 perf_all = get_performance()
 
 trades = get_trades()
+
+test_progress = get_test_progress()
 
 
 if (
@@ -484,6 +519,38 @@ with report_tab:
 
     st.caption(
         f"Current strategy version: {STRATEGY_VERSION}"
+    )
+
+    st.markdown("### Test progress")
+
+    p1, p2, p3 = st.columns(3)
+
+    p1.metric(
+        "Days completed",
+        f"{test_progress['elapsed']} / {TEST_LENGTH_DAYS}",
+    )
+
+    p2.metric(
+        "Days remaining",
+        test_progress["remaining"],
+    )
+
+    p3.metric(
+        "Test end date",
+        test_progress["end_date"].strftime("%Y-%m-%d"),
+    )
+
+    progress_value = (
+        test_progress["elapsed"] / TEST_LENGTH_DAYS
+    )
+
+    st.progress(
+        min(max(progress_value, 0.0), 1.0)
+    )
+
+    st.caption(
+        f"Test started on "
+        f"{test_progress['start_date'].strftime('%Y-%m-%d')}."
     )
 
     if current_strategy_trades.empty:
