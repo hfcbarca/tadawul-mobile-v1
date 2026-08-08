@@ -9,6 +9,10 @@ from sqlalchemy import create_engine, text, inspect
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///paper_trading.db")
 
+# Strategy version used for all NEW paper trades.
+# Old trades remain untouched.
+STRATEGY_VERSION = "V2_2026-08-08"
+
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
@@ -83,7 +87,8 @@ def init_db():
                     exit DOUBLE PRECISION,
                     pnl_pct DOUBLE PRECISION,
                     outcome VARCHAR(100),
-                    signal_date VARCHAR(20)
+                    signal_date VARCHAR(20),
+                    strategy_version VARCHAR(50)
                 )
                 """
                 if DATABASE_URL.startswith("sqlite")
@@ -102,7 +107,8 @@ def init_db():
                     exit DOUBLE PRECISION,
                     pnl_pct DOUBLE PRECISION,
                     outcome VARCHAR(100),
-                    signal_date VARCHAR(20)
+                    signal_date VARCHAR(20),
+                    strategy_version VARCHAR(50)
                 )
                 """
             )
@@ -118,6 +124,15 @@ def init_db():
                 text(
                     "ALTER TABLE paper_trades "
                     "ADD COLUMN signal_date VARCHAR(20)"
+                )
+            )
+
+    if "strategy_version" not in trade_columns:
+        with engine.begin() as con:
+            con.execute(
+                text(
+                    "ALTER TABLE paper_trades "
+                    "ADD COLUMN strategy_version VARCHAR(50)"
                 )
             )
 
@@ -272,7 +287,8 @@ def open_trade(row):
                     target1,
                     target2,
                     status,
-                    signal_date
+                    signal_date,
+                    strategy_version
                 )
                 VALUES
                 (
@@ -284,7 +300,8 @@ def open_trade(row):
                     :target1,
                     :target2,
                     'OPEN',
-                    :signal_date
+                    :signal_date,
+                    :strategy_version
                 )
                 """
             ),
@@ -297,6 +314,7 @@ def open_trade(row):
                 "target1": row["target1"],
                 "target2": row["target2"],
                 "signal_date": signal_date,
+                "strategy_version": STRATEGY_VERSION,
             },
         )
 
