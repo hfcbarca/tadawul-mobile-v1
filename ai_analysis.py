@@ -16,35 +16,45 @@ def gemini_available() -> bool:
 
 def analyze_stock_with_gemini(stock_data: dict) -> str:
     if not GEMINI_API_KEY:
-        return "Gemini is not connected. GEMINI_API_KEY is missing."
+        return "Gemini is not connected."
 
     prompt = f"""
-You are an AI research assistant inside a Saudi stock paper-trading tool.
+You are an AI analyst inside a Saudi stock paper-trading application.
 
-IMPORTANT RULES:
-- Do NOT change the system's BUY/WATCH/AVOID signal.
-- Do NOT issue a new buy or sell recommendation.
-- Analyze only the supplied technical data.
-- Keep the response concise and practical.
-- Mention the strongest positives, main risks, and what should be watched next.
-- This is a paper-trading research tool, not real-money execution.
+Analyze ONLY the supplied technical data.
+
+Important:
+- Do not change the system's existing BUY/WATCH/AVOID classification.
+- Do not create a new trading signal.
+- Do not recommend real-money trading.
+- Be concise but useful.
+- Maximum about 120 words.
+- Give a practical assessment, not a generic explanation.
 
 Stock data:
 {json.dumps(stock_data, ensure_ascii=False, default=str)}
 
-Return the analysis in this format:
+Respond exactly in this format:
 
-Summary:
-...
+AI View: [Positive / Neutral / Cautious]
 
-Strengths:
-...
+Trend:
+[one short sentence]
 
-Risks:
-...
+Signal quality:
+[one short sentence explaining whether the technical data supports or weakens the existing setup]
+
+Main strengths:
+[maximum 2 points]
+
+Main risks:
+[maximum 2 points]
 
 Watch next:
-...
+[one specific technical condition or level to monitor]
+
+Bottom line:
+[one short sentence]
 """.strip()
 
     url = (
@@ -60,8 +70,8 @@ Watch next:
             }
         ],
         "generationConfig": {
-            "temperature": 0.2,
-            "maxOutputTokens": 500,
+            "temperature": 0.15,
+            "maxOutputTokens": 350,
         },
     }
 
@@ -76,8 +86,13 @@ Watch next:
     )
 
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            result = json.loads(response.read().decode("utf-8"))
+        with urllib.request.urlopen(
+            request,
+            timeout=30,
+        ) as response:
+            result = json.loads(
+                response.read().decode("utf-8")
+            )
 
         candidates = result.get("candidates", [])
 
@@ -90,20 +105,26 @@ Watch next:
             .get("parts", [])
         )
 
-        text_parts = [
+        text = "\n".join(
             part.get("text", "")
             for part in parts
             if part.get("text")
-        ]
+        ).strip()
 
-        if not text_parts:
+        if not text:
             return "Gemini returned an empty response."
 
-        return "\n".join(text_parts).strip()
+        return text
 
     except urllib.error.HTTPError as e:
-        details = e.read().decode("utf-8", errors="ignore")
-        return f"Gemini API error ({e.code}): {details[:300]}"
+        details = e.read().decode(
+            "utf-8",
+            errors="ignore",
+        )
+        return (
+            f"Gemini API error ({e.code}): "
+            f"{details[:300]}"
+        )
 
     except Exception as e:
         return f"Gemini connection error: {e}"
