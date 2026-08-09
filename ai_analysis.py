@@ -33,7 +33,7 @@ def _call_gemini(model: str, prompt: str) -> str:
             }
         ],
         "generationConfig": {
-            "maxOutputTokens": 450,
+            "maxOutputTokens": 1200,
         },
     }
 
