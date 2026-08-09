@@ -18,6 +18,7 @@ from db import (
     STRATEGY_VERSION,
 )
 from daily_runner import run_daily_scan
+from ai_analysis import analyze_stock_with_gemini, gemini_available
 
 
 st.set_page_config(
@@ -471,6 +472,55 @@ with detail_tab:
                 "**Why this score:**",
                 latest["reasons"],
             )
+
+            st.markdown("### ✨ AI Analysis")
+
+            if not gemini_available():
+                st.warning(
+                    "Gemini API is not connected."
+                )
+
+            else:
+                if st.button(
+                    "✨ Analyze with Gemini",
+                    use_container_width=True,
+                ):
+                    ai_data = {
+                        "symbol": symbol,
+                        "price": float(
+                            d.Close.iloc[-1]
+                        ),
+                        "score": float(
+                            latest["score"]
+                        ),
+                        "rsi": latest["rsi"],
+                        "relative_volume": (
+                            latest["rvol"]
+                        ),
+                        "reasons": (
+                            latest["reasons"]
+                        ),
+                        "sma20": float(
+                            d.SMA20.iloc[-1]
+                        ),
+                        "sma50": float(
+                            d.SMA50.iloc[-1]
+                        ),
+                        "sma200": float(
+                            d.SMA200.iloc[-1]
+                        ),
+                    }
+
+                    with st.spinner(
+                        "Gemini is analyzing..."
+                    ):
+                        analysis = (
+                            analyze_stock_with_gemini(
+                                ai_data
+                            )
+                        )
+
+                    st.info(analysis)
 
     except Exception as e:
         st.error(
