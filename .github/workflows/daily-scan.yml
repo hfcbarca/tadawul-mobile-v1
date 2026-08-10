@@ -2,8 +2,8 @@ name: Tadawul Daily Scan
 
 on:
   schedule:
-    # Sunday–Thursday at 13:10 UTC = 4:10 PM Saudi time
-    - cron: '10 13 * * 0-4'
+    # Sunday–Thursday at 13:15 UTC = 4:15 PM Saudi time
+    - cron: '15 13 * * 0-4'
   workflow_dispatch:
 
 jobs:
@@ -25,4 +25,5 @@ jobs:
       - name: Run Tadawul daily scan
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python daily_runner.py
