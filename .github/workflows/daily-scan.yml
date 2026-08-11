@@ -2,13 +2,18 @@ name: Tadawul Daily Scan
 
 on:
   schedule:
-    # Sunday–Thursday at 13:15 UTC = 4:15 PM Saudi time
+    # Saudi market days: Sunday–Thursday
+    # Three automatic attempts after market close
     - cron: '15 13 * * 0-4'
+    - cron: '30 13 * * 0-4'
+    - cron: '45 13 * * 0-4'
+
   workflow_dispatch:
 
 jobs:
   daily-scan:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
